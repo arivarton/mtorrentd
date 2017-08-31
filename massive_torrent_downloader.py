@@ -40,9 +40,9 @@ def validate_url(url, path=False):
         if _value:
             return True
         else:
-            raise ValueError
+            raise ValueError('Invalid value:', _value)
     except:
-        raise ValueError
+        raise ValueError('Invalid value:', _value)
 
 
 def download_torrents(args, site, payload=False):
@@ -53,25 +53,33 @@ def download_torrents(args, site, payload=False):
 
     with requests.Session() as session:
         if payload:
-            post = session.post(parse.urljoin(site['url'], site['login_path']),
-                                data=payload)
-        search_page = session.get(parse.urljoin(site['url'],
-                                  site['search_path'] + args.search_string),
-                                  cookies=post.cookies)
-        soup = BeautifulSoup(search_page.text, 'html.parser')
-    download_links = soup.find(class_='torrentlist').find_all(href=re.compile(site['download_regex']))
-    name_list = soup.find(class_='torrentlist').find_all(href=re.compile(site['name_regex']))
+            session.post(parse.urljoin(site['url'], site['login_path']),
+                         data=payload)
+        crawled_content = list()
+        for page in range(args.pages):
+            search_page = session.get(parse.urljoin(site['url'],
+                                                    site['search_path'] +
+                                                    args.search_string +
+                                                    site['page_path'] + str(page)))
+            soup = BeautifulSoup(search_page.text, 'html.parser')
+            download_links = soup.find(class_='torrentlist').find_all(href=re.compile(site['download_regex']))
+            name_list = soup.find(class_='torrentlist').find_all(href=re.compile(site['name_regex']))
+            crawled_content.append({'download_links': download_links,
+                                    'name_list': name_list})
     search_results = defaultdict(str)
-    for index, name in enumerate(name_list):
-        _name = name.get_text().strip()
-        _link = download_links[index].get('href')
-        search_results[_name] = _link
-        if args.pretend:
-            print('%d: %s\n%s\n' % (index + 1, _name, _link))
-    regex = re.compile('.*KILLERS.*')
+    for content in crawled_content:
+        for index, item in enumerate(zip(content['name_list'], content['download_links'])):
+            #  print(crawled_content[index])
+            _name = item[0].get_text().strip()
+            _link = item[1].get('href')
+            search_results[_name] = _link
+            if args.pretend:
+                print('Torrent name: %s\nDownload link: %s\n' % (_name, _link))
+                #  print('%d: %s\n%s\n' % (index + 1, _name, _link))
+    regex = re.compile(args.regex_string)
     matched_list = [name for name in search_results if regex.match(name)]
     if args.pretend:
-        print('\n'.join(matched_list))
+        print('Regex search:\n' + '\n'.join(matched_list))
 
 
 def login(args, site):
@@ -86,6 +94,7 @@ def login(args, site):
 def run():
     common_parameters = argparse.ArgumentParser(add_help=False)
     common_parameters.add_argument('search_string', type=str)
+    common_parameters.add_argument('regex_string', type=str)
     common_parameters.add_argument('-x', '--pretend', action='store_true')
     common_parameters.add_argument('-p', '--pages', type=int, default=3)
     common_parameters.add_argument('-d', '--download_dir', type=str,
