@@ -45,12 +45,7 @@ def validate_url(url, path=False):
         raise ValueError('Invalid value:', _value)
 
 
-def download_torrents(args, site, payload=False):
-    site = torrent_site_list[site]
-
-    validate_url(site['url'])
-    validate_url(site['search_path'], path=True)
-
+def get_torrent_list(site, args, payload=False):
     with requests.Session() as session:
         if payload:
             session.post(parse.urljoin(site['url'], site['login_path']),
@@ -64,37 +59,42 @@ def download_torrents(args, site, payload=False):
             soup = BeautifulSoup(search_page.text, 'html.parser')
             download_links = soup.find(class_='torrentlist').find_all(href=re.compile(site['download_regex']))
             name_list = soup.find(class_='torrentlist').find_all(href=re.compile(site['name_regex']))
-            crawled_content.append({'download_links': download_links,
-                                    'name_list': name_list})
+            crawled_content.append((name_list, download_links))
     search_results = defaultdict(str)
-    for content in crawled_content:
-        for index, item in enumerate(zip(content['name_list'], content['download_links'])):
-            #  print(crawled_content[index])
-            _name = item[0].get_text().strip()
-            _link = item[1].get('href')
-            search_results[_name] = _link
-            if args.pretend:
-                print('Torrent name: %s\nDownload link: %s\n' % (_name, _link))
-                #  print('%d: %s\n%s\n' % (index + 1, _name, _link))
     regex = re.compile(args.regex_string)
-    matched_list = [name for name in search_results if regex.match(name)]
+    for name_list, download_links in crawled_content:
+        # Necessary for the regex match
+        search_results.update({name.get_text().strip(): parse.urljoin(site['url'], link.get('href')) for name, link in zip(name_list, download_links) if regex.match(name.get_text().strip())})
     if args.pretend:
-        print('Regex search:\n' + '\n'.join(matched_list))
+        for key, val in search_results.items():
+            print('Name: %s\nLink: %s\n' % (key, val))
+    return search_results
 
 
-def login(args, site):
+def download_torrents(site, *args):
+    site = torrent_site_list[site]
+
+    validate_url(site['url'])
+    validate_url(site['search_path'], path=True)
+
+    get_torrent_list(site, *args)
+
+
+def login(site, args):
     validate_url(torrent_site_list[site]['login_path'], path=True)
     payload = {
         'username': args.username,
         'password': args.password
     }
-    download_torrents(args, site, payload)
+    download_torrents(site, args, payload)
 
 
 def run():
     common_parameters = argparse.ArgumentParser(add_help=False)
     common_parameters.add_argument('search_string', type=str)
-    common_parameters.add_argument('regex_string', type=str)
+    common_parameters.add_argument('-r', '--regex_string', type=str, default='.*',
+                                   help=''' If necessary, filter the list of
+                                   torrents down with a regex string''')
     common_parameters.add_argument('-x', '--pretend', action='store_true')
     common_parameters.add_argument('-p', '--pages', type=int, default=3)
     common_parameters.add_argument('-d', '--download_dir', type=str,
@@ -114,7 +114,7 @@ def run():
             search_parser.set_defaults(func=download_torrents)
 
     args = parser.parse_args()
-    args.func(args, argv[1])
+    args.func(argv[1], args)
 
 
 if __name__ == '__main__':
