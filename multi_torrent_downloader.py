@@ -3,6 +3,7 @@
 import argparse
 import requests
 import re
+import yaml
 from sys import argv
 from urllib import parse
 from pathlib import Path
@@ -11,24 +12,11 @@ from collections import defaultdict
 from bs4 import BeautifulSoup
 
 
-torrent_site_list = {
-    'deildu': {
-        'url': 'https://deildu.net',
-        'login_required': True,
-        'search_path': 'browse.php?search=',
-        'page_path': '&page=',
-        'login_path': 'takelogin.php',
-        'name_regex': r"^details.php\?id=[0-9]{6}$",
-        'download_regex': r"download.php*"
-    },
-    'thepiratebay': {
-        'url': 'https://thepiratebay.org',
-        'login_required': False,
-        'search_path': 'search/',
-        'name_regex': r"^details.php\?id=[0-9]{6}$",
-        'download_regex': r"download.php*"
-    }
-}
+with open('config.yaml', 'r') as config:
+    try:
+        torrent_site_list = yaml.load(config)
+    except yaml.YAMLError as err:
+        print(err)
 
 
 def validate_url(url, path=False):
