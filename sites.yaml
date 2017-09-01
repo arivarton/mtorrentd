@@ -1,0 +1,15 @@
+deildu:
+  download_regex: 'download.php*'
+  login_required: true
+  login_path: 'takelogin.php'
+  name_regex: '^details.php\?id=[0-9]{6}$'
+  page_path: '&page='
+  search_path: 'browse.php?search='
+  url: 'https://deildu.net'
+thepiratebay:
+  download_regex: 'download.php*'
+  login_required: false
+  name_regex: '^details.php\?id=[0-9]{6}$'
+  page_path: ''
+  search_path: 'search/'
+  url: 'https://thepiratebay.org'

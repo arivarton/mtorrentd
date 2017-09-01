@@ -5,16 +5,22 @@ import requests
 import re
 import yaml
 from sys import argv
+from os.path import expanduser
 from urllib import parse
-from pathlib import Path
-from os.path import join
 from collections import defaultdict
 from bs4 import BeautifulSoup
 
 
+with open('sites.yaml', 'r') as sites:
+    try:
+        SITE_LIST = yaml.load(sites)
+    except yaml.YAMLError as err:
+        print(err)
+
+
 with open('config.yaml', 'r') as config:
     try:
-        torrent_site_list = yaml.load(config)
+        CONFIG = yaml.load(config)
     except yaml.YAMLError as err:
         print(err)
 
@@ -45,13 +51,13 @@ def get_torrent_list(site, args, payload=False):
                                                     args.search_string +
                                                     site['page_path'] + str(page)))
             soup = BeautifulSoup(search_page.text, 'html.parser')
-            download_links = soup.find(class_='torrentlist').find_all(href=re.compile(site['download_regex']))
-            name_list = soup.find(class_='torrentlist').find_all(href=re.compile(site['name_regex']))
+            container = soup.find(class_='torrentlist')
+            download_links = container.find_all(href=re.compile(site['download_regex']))
+            name_list = container.find_all(href=re.compile(site['name_regex']))
             crawled_content.append((name_list, download_links))
     search_results = defaultdict(str)
     regex = re.compile(args.regex_string)
     for name_list, download_links in crawled_content:
-        # Necessary for the regex match
         search_results.update({name.get_text().strip(): parse.urljoin(site['url'], link.get('href')) for name, link in zip(name_list, download_links) if regex.match(name.get_text().strip())})
     if args.pretend:
         for key, val in search_results.items():
@@ -60,7 +66,7 @@ def get_torrent_list(site, args, payload=False):
 
 
 def download_torrents(site, *args):
-    site = torrent_site_list[site]
+    site = SITE_LIST[site]
 
     validate_url(site['url'])
     validate_url(site['search_path'], path=True)
@@ -69,7 +75,7 @@ def download_torrents(site, *args):
 
 
 def login(site, args):
-    validate_url(torrent_site_list[site]['login_path'], path=True)
+    validate_url(SITE_LIST[site]['login_path'], path=True)
     payload = {
         'username': args.username,
         'password': args.password
@@ -86,13 +92,13 @@ def run():
     common_parameters.add_argument('-x', '--pretend', action='store_true')
     common_parameters.add_argument('-p', '--pages', type=int, default=3)
     common_parameters.add_argument('-d', '--download_dir', type=str,
-                                   default=join(Path.home(), 'Downloads'))
+                                   default=expanduser(CONFIG['watch_dir']))
 
     parser = argparse.ArgumentParser(description='Download multiple torrents')
     subparser = parser.add_subparsers()
 
-    for site in torrent_site_list:
-        if torrent_site_list[site]['login_required']:
+    for site in SITE_LIST:
+        if SITE_LIST[site]['login_required']:
             login_parser = subparser.add_parser(site, help='Enter login info.', parents=[common_parameters])
             login_parser.add_argument('username', type=str)
             login_parser.add_argument('password', type=str)
