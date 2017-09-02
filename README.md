@@ -3,6 +3,7 @@ Still a work in progress.
 Usage:
 
 ./multi_torrent_downloader.py deildu 'Mr Robot s02' username password -x
+
 ./multi_torrent_downloader.py thepiratebay 'Mr Robot s02' -x
 
 The -x parameter is set so the torrents doesn't actually download, it will only print out information about the torrents that were found with the search criteria.
