@@ -4,8 +4,9 @@ import argparse
 import requests
 import re
 import yaml
+import importlib.util
 from sys import argv
-from os.path import expanduser
+from os.path import expanduser, join
 from urllib import parse
 from collections import defaultdict
 from bs4 import BeautifulSoup
@@ -39,7 +40,12 @@ def validate_url(url, path=False):
         raise ValueError('Invalid value:', _value)
 
 
-def get_torrent_list(site, args, payload=False):
+def search(site, args, payload=False):
+    # Load site module
+    spec = importlib.util.spec_from_file_location(argv[1], join('site_modules', argv[1] + '.py'))
+    site_module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(site_module)
+
     with requests.Session() as session:
         if payload:
             session.post(parse.urljoin(site['url'], site['login_path']),
@@ -49,11 +55,13 @@ def get_torrent_list(site, args, payload=False):
             search_page = session.get(parse.urljoin(site['url'],
                                                     site['search_path'] +
                                                     args.search_string +
-                                                    site['page_path'] + str(page)))
+                                                    site['page_path'] + '/' +
+                                                    str(page)))
             soup = BeautifulSoup(search_page.text, 'html.parser')
-            container = soup.find(class_='torrentlist')
-            download_links = container.find_all(href=re.compile(site['download_regex']))
-            name_list = container.find_all(href=re.compile(site['name_regex']))
+            name_list, download_links = site_module.get_torrent_list(site, soup)
+            if not name_list or not download_links:
+                print('No more results after %d pages\n' % page)
+                break
             crawled_content.append((name_list, download_links))
     search_results = defaultdict(str)
     regex = re.compile(args.regex_string)
@@ -71,7 +79,7 @@ def download_torrents(site, *args):
     validate_url(site['url'])
     validate_url(site['search_path'], path=True)
 
-    get_torrent_list(site, *args)
+    search(site, *args)
 
 
 def login(site, args):
