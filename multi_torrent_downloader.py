@@ -67,19 +67,26 @@ def search(site, args, payload=False):
     regex = re.compile(args.regex_string)
     for name_list, download_links in crawled_content:
         search_results.update({name.get_text().strip(): parse.urljoin(site['url'], link.get('href')) for name, link in zip(name_list, download_links) if regex.match(name.get_text().strip())})
-    if args.pretend:
-        for key, val in search_results.items():
-            print('Name: %s\nLink: %s\n' % (key, val))
     return search_results
 
 
-def download_torrents(site, *args):
+def download(site, *args):
     site = SITE_LIST[site]
 
     validate_url(site['url'])
     validate_url(site['search_path'], path=True)
 
-    search(site, *args)
+    search_results = search(site, *args)
+
+    if args[0].pretend:
+        for name, link in search_results.items():
+            print('Name: %s\nLink: %s\n' % (name, link))
+    else:
+        for name, link in search_results:
+            if link.startswith('magnet:?xt'):
+                print('Magnet link')
+            else:
+                print('Not magnet link')
 
 
 def login(site, args):
@@ -88,7 +95,7 @@ def login(site, args):
         'username': args.username,
         'password': args.password
     }
-    download_torrents(site, args, payload)
+    download(site, args, payload)
 
 
 def run():
@@ -113,7 +120,7 @@ def run():
             login_parser.set_defaults(func=login)
         else:
             search_parser = subparser.add_parser(site, help='No login required.', parents=[common_parameters])
-            search_parser.set_defaults(func=download_torrents)
+            search_parser.set_defaults(func=download)
 
     args = parser.parse_args()
     args.func(argv[1], args)
