@@ -18,6 +18,6 @@ The -p parameter overrides the default page count of 3. It will now search for u
 
 --
 
-./multi_torrent_downloader.py thepiratebay 'Mr Robot' -x -r '.*[sS]02.*'
+./multi_torrent_downloader.py thepiratebay 'Mr Robot' -x -r '.\*[sS]02.\*'
 
 The -r parameter is for regex and will restrict the found torrents based on it.
