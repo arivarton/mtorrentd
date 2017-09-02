@@ -55,7 +55,7 @@ def search(site, args, payload=False):
             search_page = session.get(parse.urljoin(site['url'],
                                                     site['search_path'] +
                                                     args.search_string +
-                                                    site['page_path'] + '/' +
+                                                    site['page_path'] +
                                                     str(page)))
             soup = BeautifulSoup(search_page.text, 'html.parser')
             name_list, download_links = site_module.get_torrent_list(site, soup)
