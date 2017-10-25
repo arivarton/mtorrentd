@@ -96,7 +96,6 @@ def download(site, *args):
         torrent_name = join(expanduser(args[0].download_dir), name + '.torrent')
         if args[0].pretend:
             print('Name: %s\nLink: %s\n' % (name, link))
-            print(str(len(search_results)) + ' matches.')
         else:
             if link.startswith('magnet:?xt'):
                 temp_dir = tempfile.mkdtemp()
@@ -140,6 +139,8 @@ def download(site, *args):
                             print(link)
             else:
                 print('Download failed. Not a magnet or torrent link.')
+
+    print(str(len(search_results)) + ' matches.')
 
 
 def run():
