@@ -5,8 +5,12 @@ import requests
 import re
 import yaml
 import importlib.util
-from sys import argv
-from os.path import expanduser, join
+import libtorrent
+import tempfile
+import shutil
+from sys import argv, exit
+from os.path import expanduser, join, isfile
+from time import sleep
 from urllib import parse
 from collections import defaultdict
 from bs4 import BeautifulSoup
@@ -40,16 +44,26 @@ def validate_url(url, path=False):
         raise ValueError('Invalid value:', _value)
 
 
-def search(site, args, payload=False):
+def login(site, args, session):
+    validate_url(site['login_path'], path=True)
+    payload = {
+        'username': args.username,
+        'password': args.password
+    }
+    session.post(parse.urljoin(site['url'], site['login_path']),
+                 data=payload)
+    return session
+
+
+def search(site, args):
     # Load site module
     spec = importlib.util.spec_from_file_location(argv[1], join('site_modules', argv[1] + '.py'))
     site_module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(site_module)
 
     with requests.Session() as session:
-        if payload:
-            session.post(parse.urljoin(site['url'], site['login_path']),
-                         data=payload)
+        if site['login_required']:
+            session = login(site, args, session)
         crawled_content = list()
         for page in range(args.pages):
             search_page = session.get(parse.urljoin(site['url'],
@@ -78,24 +92,54 @@ def download(site, *args):
 
     search_results = search(site, *args)
 
-    if args[0].pretend:
-        for name, link in search_results.items():
+    for name, link in search_results.items():
+        torrent_name = join(expanduser(args[0].download_dir), name + '.torrent')
+        if args[0].pretend:
             print('Name: %s\nLink: %s\n' % (name, link))
-    else:
-        for name, link in search_results:
+            print(str(len(search_results)) + ' matches.')
+        else:
             if link.startswith('magnet:?xt'):
-                print('Magnet link')
+                temp_dir = tempfile.mkdtemp()
+                libt_session = libtorrent.session()
+                params = {
+                    'save_path': temp_dir,
+                    'storage_mode': libtorrent.storage_mode_t(2),
+                    'paused': False,
+                    'auto_managed': True,
+                    'duplicate_is_error': True
+                }
+                handle = libtorrent.add_magnet_uri(libt_session, link, params)
+                while (not handle.has_metadata()):
+                    try:
+                        sleep(0.1)
+                    except KeyboardInterrupt:
+                        print("Aborting...")
+                        libt_session.pause()
+                        print("Cleanup dir " + temp_dir)
+                        shutil.rmtree(temp_dir)
+                        exit(0)
+                libt_session.pause()
+                print('Done')
+                torrent_info = handle.get_torrent_info()
+                torrent_file = libtorrent.create_torrent(torrent_info)
+                torrent_name = torrent_info.name() + '.torrent'
+                print('Torrent name: ', torrent_name)
+                libt_session.remove_torrent(handle)
+                shutil.rmtree(temp_dir)
+            elif link.endswith('.torrent'):
+                with requests.Session() as session:
+                    if site['login_required']:
+                        session = login(site, *args, session=session)
+                    torrent_file = session.get(link)
+                    if isfile(torrent_name):
+                        print('Download aborted. Torrent file already exists.')
+                    else:
+                        with open(torrent_name, 'wb') as f:
+                            f.write(torrent_file.content)
+                            print(torrent_name + '. Downloaded.')
+                            print(link)
             else:
-                print('Not magnet link')
-
-
-def login(site, args):
-    validate_url(SITE_LIST[site]['login_path'], path=True)
-    payload = {
-        'username': args.username,
-        'password': args.password
-    }
-    download(site, args, payload)
+                print('Download failed. Not a magnet or torrent link.')
 
 
 def run():
@@ -117,7 +161,7 @@ def run():
             login_parser = subparser.add_parser(site, help='Enter login info.', parents=[common_parameters])
             login_parser.add_argument('username', type=str)
             login_parser.add_argument('password', type=str)
-            login_parser.set_defaults(func=login)
+            login_parser.set_defaults(func=download)
         else:
             search_parser = subparser.add_parser(site, help='No login required.', parents=[common_parameters])
             search_parser.set_defaults(func=download)

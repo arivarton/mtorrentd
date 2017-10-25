@@ -1,23 +1,30 @@
-Still a work in progress.
+## Still a work in progress.
 
-Usage:
+Magnet torrents aren't working correctly yet.
 
-./multi_torrent_downloader.py deildu 'Mr Robot s02' username password -x
+Contributors are welcome.
 
-./multi_torrent_downloader.py thepiratebay 'Mr Robot s02' -x
+# Usage
 
-The -x parameter is set so the torrents doesn't actually download, it will only print out information about the torrents that were found with the search criteria.
+### Pretend download
+> The -x parameter is set so the torrents doesn't actually download, it will only print out information about the torrents that were found with the search criteria.
+`./multi_torrent_downloader.py deildu 'Mr Robot s02' username password -x`
+`./multi_torrent_downloader.py thepiratebay 'Mr Robot s02' -x`
 
-Currently the download of torrents does not work.
+---
 
---
+### Download
+> To download torrents remove the -x parameter. Also set the directory the torrents should be downloaded to in config.yaml.
 
-./multi_torrent_downloader.py thepiratebay 'Mr Robot ' -x -p 5
+---
 
-The -p parameter overrides the default page count of 3. It will now search for up to 5 pages depending on if there are that many matching torrents.
+### Parameters
 
---
+#### -p
+> The -p parameter overrides the default page count of 3. It will now search for up to 5 pages depending on if there are that many matching torrents.
+`./multi_torrent_downloader.py thepiratebay 'Mr Robot ' -x -p 5`
 
-./multi_torrent_downloader.py thepiratebay 'Mr Robot' -x -r '.\*[sS]02.\*'
+#### -r
+> The -r parameter is for regex and will restrict the found torrents based on it.
+`./multi_torrent_downloader.py thepiratebay 'Mr Robot' -x -r '.\*[sS]02.\*'`
 
-The -r parameter is for regex and will restrict the found torrents based on it.
