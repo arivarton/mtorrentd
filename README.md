@@ -38,4 +38,4 @@ The -r parameter is for regex and will restrict the found torrents based on it.
 #### -d
 Override the download directory.
 ##### Examples
-`./multi_torrent_downloader.py thepiratebay 'Mr Robot' -d ~/.my_torrents
+`./multi_torrent_downloader.py thepiratebay 'Mr Robot' -d ~/.my_torrents`
