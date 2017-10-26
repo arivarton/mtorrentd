@@ -15,13 +15,13 @@ The -x parameter is set so the torrents doesn't actually download, it will only 
 
 `./multi_torrent_downloader.py thepiratebay 'Mr Robot s02' -x`
 
-----
+-----
 
 ### Download
 
 To download torrents remove the -x parameter. Also set the directory the torrents should be downloaded to in config.yaml.
 
-----
+-----
 
 ### Parameters
 
