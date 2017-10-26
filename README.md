@@ -5,6 +5,7 @@ Magnet torrents aren't working correctly yet.
 Contributors are welcome.
 
 # Usage
+---
 ## Pretend download
 
 The -x parameter is set so the torrents doesn't actually download, it will only print out information about the torrents that were found with the search criteria.
