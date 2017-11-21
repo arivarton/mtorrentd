@@ -30,7 +30,7 @@ with open('config.yaml', 'r') as config:
         print(err)
 
 
-def validate_url(url, path=False):
+def _validate_url(url, path=False):
     if path:
         _value = parse.urlparse(url).path
     else:
@@ -45,7 +45,7 @@ def validate_url(url, path=False):
 
 
 def login(site, args, session):
-    validate_url(site['login_path'], path=True)
+    _validate_url(site['login_path'], path=True)
     payload = {
         'username': args.username,
         'password': args.password
@@ -87,8 +87,8 @@ def search(site, args):
 def download(site, *args):
     site = SITE_LIST[site]
 
-    validate_url(site['url'])
-    validate_url(site['search_path'], path=True)
+    _validate_url(site['url'])
+    _validate_url(site['search_path'], path=True)
 
     search_results = search(site, *args)
 
@@ -150,7 +150,7 @@ def run():
                                    help=''' If necessary, filter the list of
                                    torrents down with a regex string''')
     common_parameters.add_argument('-x', '--pretend', action='store_true')
-    common_parameters.add_argument('-p', '--pages', type=int, default=3)
+    common_parameters.add_argument('-p', '--pages', type=int, default=100)
     common_parameters.add_argument('-d', '--download_dir', type=str,
                                    default=expanduser(CONFIG['watch_dir']))
 
@@ -159,9 +159,11 @@ def run():
 
     for site in SITE_LIST:
         if SITE_LIST[site]['login_required']:
-            login_parser = subparser.add_parser(site, help='Enter login info.', parents=[common_parameters])
-            login_parser.add_argument('username', type=str)
-            login_parser.add_argument('password', type=str)
+            login_parser = subparser.add_parser(site, help='Login required.', parents=[common_parameters])
+            login_parser.add_argument('username', type=str, nargs='?',
+                                      default=str(SITE_LIST[site]['username']))
+            login_parser.add_argument('password', type=str, nargs='?',
+                                      default=str(SITE_LIST[site]['password']))
             login_parser.set_defaults(func=download)
         else:
             search_parser = subparser.add_parser(site, help='No login required.', parents=[common_parameters])

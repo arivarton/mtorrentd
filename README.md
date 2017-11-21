@@ -26,7 +26,7 @@ To download torrents remove the -x parameter. Also set the directory the torrent
 ### Parameters
 
 #### -p
-The -p parameter overrides the default page count of 3. It will now search for up to 5 pages depending on if there are that many matching torrents.
+The -p parameter overrides the default maximum page count of 100.
 ##### Examples
 `./multi_torrent_downloader.py thepiratebay 'Mr Robot ' -x -p 5`
 
@@ -39,3 +39,24 @@ The -r parameter is for regex and will restrict the found torrents based on it.
 Override the download directory.
 ##### Examples
 `./multi_torrent_downloader.py thepiratebay 'Mr Robot' -d ~/.my_torrents`
+
+---
+
+### Config files
+#### sites.yaml
+Under each site these are the options that can be configured:
+```
+login_required (required)
+username
+password
+login_path (required)
+page_path (required)
+search_path (required)
+url (required)
+```
+
+### config.yaml
+Configurable options:
+```
+watch_dir
+```
