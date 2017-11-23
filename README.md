@@ -49,7 +49,7 @@ Under each site these are the options that can be configured:
 login_required (required)
 username
 password
-login_path (required)
+login_path
 page_path (required)
 search_path (required)
 url (required)

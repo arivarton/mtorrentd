@@ -10,6 +10,7 @@ import tempfile
 import shutil
 from sys import argv, exit
 from os.path import expanduser, join, isfile
+from os import listdir
 from time import sleep
 from urllib import parse
 from collections import defaultdict
@@ -43,6 +44,14 @@ def _validate_url(url, path=False):
     except:
         raise ValueError('Invalid value:', _value)
 
+
+def _find_season_name(args, torrent_name):
+    pass
+
+
+def _find_duplicate_seasons(args, torrent_name):
+    pass
+    #  downloaded_torrents = listdir(self.args.download_dir)
 
 def login(site, args, session):
     _validate_url(site['login_path'], path=True)
@@ -84,17 +93,17 @@ def search(site, args):
     return search_results
 
 
-def download(site, *args):
+def download(site, args):
     site = SITE_LIST[site]
 
     _validate_url(site['url'])
     _validate_url(site['search_path'], path=True)
 
-    search_results = search(site, *args)
+    search_results = search(site, args)
 
     for name, link in search_results.items():
-        torrent_name = join(expanduser(args[0].download_dir), name + '.torrent')
-        if args[0].pretend:
+        torrent_name = join(expanduser(args.download_dir), name + '.torrent')
+        if args.pretend:
             print('Name: %s\nLink: %s\n' % (name, link))
         else:
             if link.startswith('magnet:?xt'):
@@ -128,14 +137,14 @@ def download(site, *args):
             elif link.endswith('.torrent'):
                 with requests.Session() as session:
                     if site['login_required']:
-                        session = login(site, *args, session=session)
+                        session = login(site, args, session=session)
                     torrent_file = session.get(link)
                     if isfile(torrent_name):
                         print('Download aborted. Torrent file already exists.')
                     else:
                         with open(torrent_name, 'wb') as f:
                             f.write(torrent_file.content)
-                            print(torrent_name + '. Downloaded.')
+                            print('Torrent added here: ' + torrent_name)
                             print(link)
             else:
                 print('Download failed. Not a magnet or torrent link.')
