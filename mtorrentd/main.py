@@ -1,49 +1,22 @@
 #! /usr/bin/env python3
 
+import os
 import argparse
 import requests
 import re
 import yaml
 import importlib.util
-import libtorrent
+#  import libtorrent
 import tempfile
 import shutil
+
 from sys import argv, exit
-from os.path import expanduser, join, isfile
 from time import sleep
 from urllib import parse
 from collections import defaultdict
 from bs4 import BeautifulSoup
-
-CONFIG_DIR = expanduser('~/.config/mtd/')
-
-with open(join(CONFIG_DIR, 'sites.yaml'), 'r') as sites:
-    try:
-        SITE_LIST = yaml.load(sites)
-    except yaml.YAMLError as err:
-        print(err)
-
-
-with open(join(CONFIG_DIR, 'config.yaml'), 'r') as config:
-    try:
-        CONFIG = yaml.load(config)
-    except yaml.YAMLError as err:
-        print(err)
-
-
-def _validate_url(url, path=False):
-    if path:
-        _value = parse.urlparse(url).path
-    else:
-        _value = parse.urlparse(url).netloc
-    try:
-        if _value:
-            return True
-        else:
-            raise ValueError('Invalid value:', _value)
-    except:
-        raise ValueError('Invalid value:', _value)
-
+from .config import load_config
+from .core import validate_url, load_site_module
 
 def _find_season_name(args, torrent_name):
     pass
@@ -55,7 +28,7 @@ def _find_duplicate_seasons(args, torrent_name):
 
 
 def login(site, args, session):
-    _validate_url(site['login_path'], path=True)
+    validate_url(site['login_path'], path=True)
     payload = {
         'username': args.username,
         'password': args.password
@@ -66,10 +39,7 @@ def login(site, args, session):
 
 
 def search(site, args):
-    # Load site module
-    spec = importlib.util.spec_from_file_location(argv[1], join('site_modules', argv[1] + '.py'))
-    site_module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(site_module)
+    site_module = load_site_module(argv[1])
 
     with requests.Session() as session:
         if site['login_required']:
@@ -95,53 +65,26 @@ def search(site, args):
 
 
 def download(site, args):
-    site = SITE_LIST[site]
+    site = load_config('sites')[site]
 
-    _validate_url(site['url'])
-    _validate_url(site['search_path'], path=True)
+    validate_url(site['url'])
+    validate_url(site['search_path'], path=True)
 
     search_results = search(site, args)
 
     for name, link in search_results.items():
-        torrent_name = join(expanduser(args.download_dir), name + '.torrent')
+        torrent_name = os.path.join(os.path.expanduser(args.download_dir), name + '.torrent')
         if args.pretend:
             print('Name: %s\nLink: %s\n' % (name, link))
         else:
             if link.startswith('magnet:?xt'):
-                temp_dir = tempfile.mkdtemp()
-                libt_session = libtorrent.session()
-                params = {
-                    'save_path': temp_dir,
-                    'storage_mode': libtorrent.storage_mode_t(2),
-                    'paused': False,
-                    'auto_managed': True,
-                    'duplicate_is_error': True
-                }
-                handle = libtorrent.add_magnet_uri(libt_session, link, params)
-                libt_session.start_dht()
-                while (not handle.has_metadata()):
-                    try:
-                        sleep(0.1)
-                    except KeyboardInterrupt:
-                        print("Aborting...")
-                        libt_session.pause()
-                        print("Cleanup dir " + temp_dir)
-                        shutil.rmtree(temp_dir)
-                        exit(0)
-                libt_session.pause()
-                print('Done')
-                torrent_info = handle.get_torrent_info()
-                torrent_file = libtorrent.create_torrent(torrent_info)
-                torrent_name = torrent_info.name() + '.torrent'
-                print('Torrent name: ', torrent_name)
-                #  libt_session.remove_torrent(handle)
-                print('Torrent was saved here:', temp_dir)
+                print('Not supported yet')
             elif link.endswith('.torrent'):
                 with requests.Session() as session:
                     if site['login_required']:
                         session = login(site, args, session=session)
                     torrent_file = session.get(link)
-                    if isfile(torrent_name):
+                    if os.path.isfile(torrent_name):
                         print('Download aborted. Torrent file already exists.')
                     else:
                         with open(torrent_name, 'wb') as f:
@@ -163,25 +106,28 @@ def run():
     common_parameters.add_argument('-x', '--pretend', action='store_true')
     common_parameters.add_argument('-p', '--pages', type=int, default=100)
     common_parameters.add_argument('-d', '--download_dir', type=str,
-                                   default=expanduser(CONFIG['watch_dir']))
+                                   default=os.path.expanduser(load_config('config')['watch_dir']))
 
     parser = argparse.ArgumentParser(description='Download multiple torrents')
     subparser = parser.add_subparsers()
 
-    for site in SITE_LIST:
-        if SITE_LIST[site]['login_required']:
+    for site, values in load_config('sites').items():
+        if values['login_required']:
             login_parser = subparser.add_parser(site, help='Login required.', parents=[common_parameters])
             login_parser.add_argument('username', type=str, nargs='?',
-                                      default=str(SITE_LIST[site]['username']))
+                                      default=str(values['username']))
             login_parser.add_argument('password', type=str, nargs='?',
-                                      default=str(SITE_LIST[site]['password']))
+                                      default=str(values['password']))
             login_parser.set_defaults(func=download)
         else:
             search_parser = subparser.add_parser(site, help='No login required.', parents=[common_parameters])
             search_parser.set_defaults(func=download)
 
     args = parser.parse_args()
+    #  try:
     args.func(argv[1], args)
+    #  except AttributeError:
+        #  parser.print_help()
 
 
 if __name__ == '__main__':
