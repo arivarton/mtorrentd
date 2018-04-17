@@ -10,21 +10,21 @@ import tempfile
 import shutil
 from sys import argv, exit
 from os.path import expanduser, join, isfile
-from os import listdir
 from time import sleep
 from urllib import parse
 from collections import defaultdict
 from bs4 import BeautifulSoup
 
+CONFIG_DIR = expanduser('~/.config/mtd/')
 
-with open('sites.yaml', 'r') as sites:
+with open(join(CONFIG_DIR, 'sites.yaml'), 'r') as sites:
     try:
         SITE_LIST = yaml.load(sites)
     except yaml.YAMLError as err:
         print(err)
 
 
-with open('config.yaml', 'r') as config:
+with open(join(CONFIG_DIR, 'config.yaml'), 'r') as config:
     try:
         CONFIG = yaml.load(config)
     except yaml.YAMLError as err:
@@ -52,6 +52,7 @@ def _find_season_name(args, torrent_name):
 def _find_duplicate_seasons(args, torrent_name):
     pass
     #  downloaded_torrents = listdir(self.args.download_dir)
+
 
 def login(site, args, session):
     _validate_url(site['login_path'], path=True)
@@ -87,9 +88,9 @@ def search(site, args):
                 break
             crawled_content.append((name_list, download_links))
     search_results = defaultdict(str)
-    regex = re.compile(args.regex_string)
+    regex = re.compile(args.regex_string, re.IGNORECASE)
     for name_list, download_links in crawled_content:
-        search_results.update({name.get_text().strip(): parse.urljoin(site['url'], link.get('href')) for name, link in zip(name_list, download_links) if regex.match(name.get_text().strip())})
+        search_results.update({name.get_text().strip(): parse.urljoin(site['url'], link.get('href')) for name, link in zip(name_list, download_links) if regex.match(name.get_text().strip(), re.IGNORECASE)})
     return search_results
 
 
@@ -117,6 +118,7 @@ def download(site, args):
                     'duplicate_is_error': True
                 }
                 handle = libtorrent.add_magnet_uri(libt_session, link, params)
+                libt_session.start_dht()
                 while (not handle.has_metadata()):
                     try:
                         sleep(0.1)
@@ -132,8 +134,8 @@ def download(site, args):
                 torrent_file = libtorrent.create_torrent(torrent_info)
                 torrent_name = torrent_info.name() + '.torrent'
                 print('Torrent name: ', torrent_name)
-                libt_session.remove_torrent(handle)
-                shutil.rmtree(temp_dir)
+                #  libt_session.remove_torrent(handle)
+                print('Torrent was saved here:', temp_dir)
             elif link.endswith('.torrent'):
                 with requests.Session() as session:
                     if site['login_required']:
