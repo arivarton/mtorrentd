@@ -44,5 +44,5 @@ setup(
     ],
     keywords='torrent download regex filter',
     python_requires='>=3',
-    packages=['mtorrentd',],
+    packages=['mtorrentd','mtorrentd.site-modules',],
 )
