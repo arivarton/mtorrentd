@@ -12,7 +12,7 @@ depends=('python3'
          'python-beautifulsoup4'
         )
 source=("$pkgname-$pkgver.tar.gz"::https://github.com/arivarton/multi-torrent-downloader/archive/v"$pkgver".tar.gz)
-sha256sums=('f71d9d7854011539d7d7cf60f809adf4d28aa0a7b1ca0450234bbbf0ef860e52')
+sha256sums=('5a23037e8ea66685748b98af3f2efc258e80264ece6e881d5051b57b7d4acedf')
 package() {
     cd "${srcdir}/$pkgname-$pkgver"
     python3 setup.py install --prefix=/usr --root="$pkgdir/"
