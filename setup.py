@@ -3,16 +3,20 @@
 # https://packaging.pypa.io/en/latest/
 # https://setuptools.readthedocs.io/en/latest/setuptools.html
 
-from setuptools import setup, find_packages
+from distutils.core import setup
+from os import path
+
+exec_dir = path.abspath(path.dirname(__file__))
+
+with open(path.join(exec_dir, 'README.md'), encoding='utf-8') as f:
+    long_description = f.read()
 
 setup(
     name='mtorrentd',
-    version='0.3.1',
+    version='0.3.2',
     description='Search for and download multiple torrents at once',
-    long_description='''Search for and download multiple torrents at once. Useful
-                        when following a series and used in combination with chron and
-                        torrent software which use watch folders (f.ex. rtorrent) to
-                        automatically download series.''',
+    long_description=long_description,
+    long_description_content_type='text/markdown',
     url='https://github.com/arivarton/multi-torrent-downloader/',
     author='arivarton',
     author_email='packager@arivarton.com',
@@ -39,16 +43,6 @@ setup(
         'Operating System :: POSIX :: Linux',
     ],
     keywords='torrent download regex filter',
-    install_requires=[
-        'requests',
-        'bs4',
-        'pyyaml'
-    ],
     python_requires='>=3',
-    packages=find_packages(exclude=['tests',]),
-    entry_points={
-        'console_scripts': [
-            'mtorrentd = mtorrentd.main:run',
-        ]
-    }
+    packages=['mtorrentd',],
 )
