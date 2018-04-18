@@ -11,9 +11,9 @@ Contributors are welcome.
 The -x parameter is set so the torrents doesn't actually download, it will only print out information about the torrents that were found with the search criteria.
 
 ##### Examples
-`./multi_torrent_downloader.py deildu 'Mr Robot s02' username password -x`
+`mtorrentd deildu 'Mr Robot s02' username password -x`
 
-`./multi_torrent_downloader.py thepiratebay 'Mr Robot s02' -x`
+`mtorrentd thepiratebay 'Mr Robot s02' -x`
 
 ---
 
@@ -28,17 +28,17 @@ To download torrents remove the -x parameter. Also set the directory the torrent
 #### -p
 The -p parameter overrides the default maximum page count of 100.
 ##### Examples
-`./multi_torrent_downloader.py thepiratebay 'Mr Robot ' -x -p 5`
+`mtorrentd thepiratebay 'Mr Robot ' -x -p 5`
 
 #### -r
 The -r parameter is for regex and will restrict the found torrents based on it.
 ##### Examples
-`./multi_torrent_downloader.py thepiratebay 'Mr Robot' -x -r '.*[sS]02.*'`
+`mtorrentd thepiratebay 'Mr Robot' -x -r '.*[sS]02.*'`
 
 #### -d
 Override the download directory.
 ##### Examples
-`./multi_torrent_downloader.py thepiratebay 'Mr Robot' -d ~/.my_torrents`
+`mtorrentd thepiratebay 'Mr Robot' -d ~/.my_torrents`
 
 ---
 
@@ -60,3 +60,7 @@ Configurable options:
 ```
 watch_dir
 ```
+
+### Install
+#### Manual
+`python3 setup.py install`
