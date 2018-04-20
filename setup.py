@@ -13,7 +13,7 @@ with open(path.join(exec_dir, 'README.md'), encoding='utf-8') as f:
 
 setup(
     name='mtorrentd',
-    version='0.3.2',
+    version='0.3.3',
     description='Search for and download multiple torrents at once',
     long_description=long_description,
     long_description_content_type='text/markdown',

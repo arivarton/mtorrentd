@@ -1,6 +1,6 @@
 # Maintainer: Andri Viðar Tryggvason <packager@arivarton.com>
 pkgname=mtorrentd
-pkgver=0.3.2
+pkgver=0.3.3
 pkgrel=1
 pkgdesc='Search torrent websites and download .torrent files in terminal.'
 arch=('any')
@@ -12,7 +12,7 @@ depends=('python3'
          'python-beautifulsoup4'
         )
 source=("$pkgname-$pkgver.tar.gz"::https://github.com/arivarton/multi-torrent-downloader/archive/v"$pkgver".tar.gz)
-sha256sums=('8c452833c48ee83b5d5b544b2ae3a7db250f88aae4f7c85628c428a1fb143c64')
+sha256sums=('87bd2397ba838e1c0ddfceccb190094310273f9fcc9f8290bf2b723e0ed675ed')
 package() {
     cd "${srcdir}/$pkgname-$pkgver"
     python3 setup.py install --prefix=/usr --root="$pkgdir/"
