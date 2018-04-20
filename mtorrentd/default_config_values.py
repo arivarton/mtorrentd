@@ -1,5 +1,7 @@
 CONFIG = {'watch_dir': '~/.mtorrentd/watch'}
 
+# For each value that is required to be set in SITES, it must be defined in
+# config.py to be handled properly.
 SITES = {
     'thepiratebay': {
             'login_required': False,

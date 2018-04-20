@@ -15,8 +15,10 @@ from time import sleep
 from urllib import parse
 from collections import defaultdict
 from bs4 import BeautifulSoup
+
 from .config import load_config
 from .core import validate_url, load_site_module
+from .helpers import catch_undefined_credentials
 
 def _find_season_name(args, torrent_name):
     pass
@@ -88,9 +90,10 @@ def download(site, args):
                         print('Download aborted. Torrent file already exists.')
                     else:
                         with open(torrent_name, 'wb') as f:
-                            f.write(torrent_file.content)
-                            print('Torrent added here: ' + torrent_name)
-                            print(link)
+                            try:
+                                f.write(torrent_file.content)
+                                print('Torrent added here: ' + torrent_name)
+                                print(link)
             else:
                 print('Download failed. Not a magnet or torrent link.')
 
@@ -104,7 +107,7 @@ def run():
                                    help=''' If necessary, filter the list of
                                    torrents down with a regex string''')
     common_parameters.add_argument('-x', '--pretend', action='store_true')
-    common_parameters.add_argument('-p', '--pages', type=int, default=100)
+    common_parameters.add_argument('-n', '--pages', type=int, default=100)
     common_parameters.add_argument('-d', '--download_dir', type=str,
                                    default=os.path.expanduser(load_config('config')['watch_dir']))
 
@@ -114,20 +117,22 @@ def run():
     for site, values in load_config('sites').items():
         if values['login_required']:
             login_parser = subparser.add_parser(site, help='Login required.', parents=[common_parameters])
-            login_parser.add_argument('username', type=str, nargs='?',
-                                      default=str(values['username']))
-            login_parser.add_argument('password', type=str, nargs='?',
-                                      default=str(values['password']))
+            login_parser.add_argument('--username', type=str, nargs='?',
+                                      default=values['username'] or None)
+            login_parser.add_argument('--password', type=str, nargs='?',
+                                      default=values['password'] or None)
             login_parser.set_defaults(func=download)
         else:
             search_parser = subparser.add_parser(site, help='No login required.', parents=[common_parameters])
             search_parser.set_defaults(func=download)
 
     args = parser.parse_args()
-    #  try:
-    args.func(argv[1], args)
-    #  except AttributeError:
-        #  parser.print_help()
+
+    if len(argv) > 1:
+        catch_undefined_credentials(argv[1], args)
+        args.func(argv[1], args)
+    else:
+        parser.print_help()
 
 
 if __name__ == '__main__':
