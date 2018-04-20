@@ -56,9 +56,10 @@ def search(site, args):
             soup = BeautifulSoup(search_page.text, 'html.parser')
             name_list, download_links = site_module.get_torrent_list(site, soup)
             if not name_list or not download_links:
-                print('No more results after %d pages\n' % page)
+                print('No more results after %d page(s)' % page)
                 break
             crawled_content.append((name_list, download_links))
+            print('%d match(es)' % len(crawled_content))
     search_results = defaultdict(str)
     regex = re.compile(args.regex_string, re.IGNORECASE)
     for name_list, download_links in crawled_content:
@@ -80,7 +81,7 @@ def download(site, args):
             print('Name: %s\nLink: %s\n' % (name, link))
         else:
             if link.startswith('magnet:?xt'):
-                print('Not supported yet')
+                print('[ERROR] Magnet links not supported yet')
             elif link.endswith('.torrent'):
                 with requests.Session() as session:
                     if site['login_required']:
@@ -89,13 +90,24 @@ def download(site, args):
                     if os.path.isfile(torrent_name):
                         print('Download aborted. Torrent file already exists.')
                     else:
-                        with open(torrent_name, 'wb') as f:
+                        if not os.path.exists(args.download_dir):
                             try:
+                                os.makedirs(args.download_dir)
+                            except PermissionError:
+                                print('[ERROR] Denied permission to create ' \
+                                      'watch folder here: %s' % args.download_dir)
+                                exit(77)
+                        try:
+                            with open(torrent_name, 'wb') as f:
                                 f.write(torrent_file.content)
                                 print('Torrent added here: ' + torrent_name)
                                 print(link)
+                        except PermissionError:
+                            print('[ERROR] Denied permission to save torrent here: %s'
+                                  % args.download_dir)
+                            exit(77)
             else:
-                print('Download failed. Not a magnet or torrent link.')
+                print('[ERROR] Download failed. Not a magnet or torrent link.')
 
     print(str(len(search_results)) + ' matches.')
 
