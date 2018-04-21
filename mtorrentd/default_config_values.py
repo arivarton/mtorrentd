@@ -9,6 +9,13 @@ SITES = {
             'search_path': 'search/',
             'url': 'https://thepiratebay.org'
     },
+    'linuxtracker': {
+            'login_required': False,
+            'page_path': '&pages=',
+            'search_path': 'index.php?&page=torrents&search=',
+            'append_path': '&active=1',
+            'url': 'http://linuxtracker.org'
+    },
     'deildu': {
         'login_required': True,
         'login_path': 'takelogin.php',
