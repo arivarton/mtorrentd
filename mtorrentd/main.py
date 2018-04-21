@@ -126,7 +126,9 @@ def run():
     parser = argparse.ArgumentParser(description='Download multiple torrents')
     subparser = parser.add_subparsers()
 
-    for site, values in load_config('sites').items():
+    sites_config = load_config('sites')
+
+    for site, values in sites_config.items():
         if values['login_required']:
             login_parser = subparser.add_parser(site, help='Login required.', parents=[common_parameters])
             login_parser.add_argument('--username', type=str, nargs='?',
@@ -141,7 +143,8 @@ def run():
     args = parser.parse_args()
 
     if len(argv) > 1:
-        catch_undefined_credentials(argv[1], args)
+        if sites_config[argv[1]]['login_required']:
+            catch_undefined_credentials(argv[1], args)
         args.func(argv[1], args)
     else:
         parser.print_help()
