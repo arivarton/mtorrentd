@@ -1,19 +1,21 @@
-#! /usr/bin/env python3
+"""Main file which will run mtorrentd.
 
+Functions:
+    - search(site, args)
+    - main(site, args)
+    - run()
+
+run() will call argparse.
+"""
+#! /usr/bin/env python3
 import os
 import argparse
-import requests
 import re
-import yaml
-import importlib.util
-#  import libtorrent
-import tempfile
-import shutil
-
 from sys import argv, exit
-from time import sleep
 from urllib import parse
 from collections import defaultdict
+import requests
+
 from bs4 import BeautifulSoup
 
 from .config import load_config
@@ -23,6 +25,7 @@ from .helpers import catch_undefined_credentials
 
 
 def search(site, args):
+    """Search for torrents and return a dictionary with name and links."""
     site_module = load_site_module(argv[1])
 
     with requests.Session() as session:
@@ -31,11 +34,11 @@ def search(site, args):
         crawled_content = list()
         for page in range(args.pages):
             search_url = parse.urljoin(site['url'],
-                                                    site['search_path'] +
-                                                    args.search_string +
-                                                    site['page_path'] +
-                                                    str(page) +
-                                                    site.get('append_path', ''))
+                                       site['search_path'] +
+                                       args.search_string +
+                                       site['page_path'] +
+                                       str(page) +
+                                       site.get('append_path', ''))
             search_page = session.get(search_url)
             soup = BeautifulSoup(search_page.text, 'html.parser')
             name_list, download_links = site_module.get_torrent_list(site, soup)
@@ -51,6 +54,7 @@ def search(site, args):
 
 
 def download(site, args):
+    """Will run search with arguments and download in return."""
     site = load_config('sites')[site]
 
     search_results = search(site, args)
@@ -80,7 +84,9 @@ def download(site, args):
     print(str(len(search_results)) + ' matches.')
 
 
+
 def run():
+    """Run argparse and catch logic for what part to run afterwards."""
     common_parameters = argparse.ArgumentParser(add_help=False)
     common_parameters.add_argument('search_string', type=str)
     common_parameters.add_argument('-r', '--regex_string', type=str, default='.*',
@@ -111,7 +117,7 @@ def run():
 
     if len(argv) > 1:
         if argv[1].startswith('magnet:?xt') or argv[1].endswith('.torrent'):
-            single_torrent_parser = argparse.ArgumentParser(add_help=False)
+            single_torrent_parser = argparse.ArgumentParser(add_help=True)
             single_torrent_parser.add_argument('torrent', type=str)
             single_torrent_parser.add_argument('-d', '--download_dir', type=lambda path: os.path.expanduser(path),
                                                default=os.path.expanduser(load_config('config')['watch_dir']))
@@ -129,6 +135,7 @@ def run():
             args.func(argv[1], args)
     else:
         parser.print_help()
+
 
 
 if __name__ == '__main__':
