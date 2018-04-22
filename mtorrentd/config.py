@@ -10,7 +10,7 @@ CONFIG_SETTINGS = {
     'sites': {
     'required_values': ['login_required', 'page_path', 'search_path', 'url'],
     'login_required_values': ['username', 'password'],
-    }
+    },
     'config': {
     }
 }
@@ -36,7 +36,7 @@ def handle_undefined_sites_value(selected_config, config_selection) -> dict:
     return selected_config
 
 
-def validate_config_values(selected_config, config_selection) -> bool:
+def validate_config_values(selected_config, config_selection) -> None:
     if config_selection is 'sites':
         for key, values in selected_config.items():
             try:
@@ -47,11 +47,10 @@ def validate_config_values(selected_config, config_selection) -> bool:
             except ValueError as err:
                 print('Error when validating config value for %s: %s' % (key, err))
     elif config_selection is 'config':
-        for key, values in selected_config.items():
-            try:
-                validate_url(values.get('watch_dir', 'Not required'), path=True)
-            except ValueError as err:
-                print('Error when validating config value for %s: %s' % (key, err))
+        try:
+            validate_url(selected_config.get('watch_dir', 'Not required'), path=True)
+        except ValueError as err:
+            print('Error when validating config value for %s: %s' % (key, err))
 
 
 def load_config(config_selection) -> dict:
