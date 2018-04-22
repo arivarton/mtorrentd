@@ -16,7 +16,7 @@ CONFIG_SETTINGS = {
 }
 
 
-def handle_undefined_sites_value(selected_config, config_selection) -> dict:
+def handle_undefined_values(selected_config, config_selection) -> dict:
     if config_selection is 'sites':
         for site, site_values in selected_config.items():
             # Check required values
@@ -83,7 +83,7 @@ def load_config(config_selection) -> dict:
     except FileNotFoundError:
         pass
 
-    selected_config = handle_undefined_sites_value(selected_config, config_selection)
+    selected_config = handle_undefined_values(selected_config, config_selection)
     validate_config_values(selected_config, config_selection)
 
     return selected_config

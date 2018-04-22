@@ -17,27 +17,9 @@ from collections import defaultdict
 from bs4 import BeautifulSoup
 
 from .config import load_config
-from .core import validate_url, load_site_module
+from .core import (load_site_module, download_torrent, download_magnet2torrent,
+                   session_login)
 from .helpers import catch_undefined_credentials
-
-def _find_season_name(args, torrent_name):
-    pass
-
-
-def _find_duplicate_seasons(args, torrent_name):
-    pass
-    #  downloaded_torrents = listdir(self.args.download_dir)
-
-
-def login(site, args, session):
-    validate_url(site['login_path'], path=True)
-    payload = {
-        'username': args.username,
-        'password': args.password
-    }
-    session.post(parse.urljoin(site['url'], site['login_path']),
-                 data=payload)
-    return session
 
 
 def search(site, args):
@@ -45,21 +27,22 @@ def search(site, args):
 
     with requests.Session() as session:
         if site['login_required']:
-            session = login(site, args, session)
+            session = session_login(site, args.username, args.password, session)
         crawled_content = list()
         for page in range(args.pages):
-            search_page = session.get(parse.urljoin(site['url'],
+            search_url = parse.urljoin(site['url'],
                                                     site['search_path'] +
                                                     args.search_string +
                                                     site['page_path'] +
-                                                    str(page)))
+                                                    str(page) +
+                                                    site.get('append_path', ''))
+            search_page = session.get(search_url)
             soup = BeautifulSoup(search_page.text, 'html.parser')
             name_list, download_links = site_module.get_torrent_list(site, soup)
             if not name_list or not download_links:
-                print('No more results after %d page(s)' % page)
+                print('No more results after %d page(s)\n' % page)
                 break
             crawled_content.append((name_list, download_links))
-            print('%d match(es)' % len(crawled_content))
     search_results = defaultdict(str)
     regex = re.compile(args.regex_string, re.IGNORECASE)
     for name_list, download_links in crawled_content:
@@ -70,44 +53,29 @@ def search(site, args):
 def download(site, args):
     site = load_config('sites')[site]
 
-    validate_url(site['url'])
-    validate_url(site['search_path'], path=True)
-
     search_results = search(site, args)
 
-    for name, link in search_results.items():
-        torrent_name = os.path.join(os.path.expanduser(args.download_dir), name + '.torrent')
-        if args.pretend:
-            print('Name: %s\nLink: %s\n' % (name, link))
-        else:
-            if link.startswith('magnet:?xt'):
-                print('[ERROR] Magnet links not supported yet')
-            elif link.endswith('.torrent'):
-                with requests.Session() as session:
-                    if site['login_required']:
-                        session = login(site, args, session=session)
-                    torrent_file = session.get(link)
-                    if os.path.isfile(torrent_name):
-                        print('Download aborted. Torrent file already exists.')
-                    else:
-                        if not os.path.exists(args.download_dir):
-                            try:
-                                os.makedirs(args.download_dir)
-                            except PermissionError:
-                                print('[ERROR] Denied permission to create ' \
-                                      'watch folder here: %s' % args.download_dir)
-                                exit(77)
-                        try:
-                            with open(torrent_name, 'wb') as f:
-                                f.write(torrent_file.content)
-                                print('Torrent added here: ' + torrent_name)
-                                print(link)
-                        except PermissionError:
-                            print('[ERROR] Denied permission to save torrent here: %s'
-                                  % args.download_dir)
-                            exit(77)
+    with requests.Session() as session:
+        if site['login_required']:
+            session = session_login(site, args.username, args.password, session=session)
+        for name, link in search_results.items():
+            if args.pretend:
+                print('Name: %s\nLink: %s\n' % (name, link))
             else:
-                print('[ERROR] Download failed. Not a magnet or torrent link.')
+                # Create directory if missing
+                if not os.path.exists(args.download_dir):
+                    try:
+                        os.makedirs(args.download_dir)
+                    except PermissionError:
+                        print('[ERROR] Denied permission to create ' \
+                                'watch folder here: %s' % args.download_dir)
+                        exit(77)
+                if link.startswith('magnet:?xt'):
+                    download_magnet2torrent(link, args.download_dir, name)
+                elif link.endswith('.torrent'):
+                    download_torrent(link, args.download_dir, name, session)
+                else:
+                    print('[ERROR] Download failed. Not a magnet or torrent link.')
 
     print(str(len(search_results)) + ' matches.')
 
@@ -119,8 +87,8 @@ def run():
                                    help=''' If necessary, filter the list of
                                    torrents down with a regex string''')
     common_parameters.add_argument('-x', '--pretend', action='store_true')
-    common_parameters.add_argument('-n', '--pages', type=int, default=100)
-    common_parameters.add_argument('-d', '--download_dir', type=str,
+    common_parameters.add_argument('-p', '--pages', type=int, default=100)
+    common_parameters.add_argument('-d', '--download_dir', type=lambda path: os.path.expanduser(path),
                                    default=os.path.expanduser(load_config('config')['watch_dir']))
 
     parser = argparse.ArgumentParser(description='Download multiple torrents')
@@ -140,12 +108,25 @@ def run():
             search_parser = subparser.add_parser(site, help='No login required.', parents=[common_parameters])
             search_parser.set_defaults(func=download)
 
-    args = parser.parse_args()
 
     if len(argv) > 1:
-        if sites_config[argv[1]]['login_required']:
-            catch_undefined_credentials(argv[1], args)
-        args.func(argv[1], args)
+        if argv[1].startswith('magnet:?xt') or argv[1].endswith('.torrent'):
+            single_torrent_parser = argparse.ArgumentParser(add_help=False)
+            single_torrent_parser.add_argument('torrent', type=str)
+            single_torrent_parser.add_argument('-d', '--download_dir', type=lambda path: os.path.expanduser(path),
+                                               default=os.path.expanduser(load_config('config')['watch_dir']))
+            args = single_torrent_parser.parse_args()
+            if argv[1].startswith('magnet:?xt'):
+                download_magnet2torrent(args.torrent, args.download_dir)
+            elif argv[1].endswith('.torrent'):
+                download_torrent(args.torrent, args.download_dir)
+        else:
+            args = parser.parse_args()
+
+            if sites_config[argv[1]]['login_required']:
+                catch_undefined_credentials(argv[1], args)
+
+            args.func(argv[1], args)
     else:
         parser.print_help()
 
