@@ -1,10 +1,25 @@
-## Still a work in progress.
+# Multi Torrent Downloader
 
-Magnet torrents aren't working correctly yet.
+Search several torrent sites for torrents and download one or more of them at once using only the terminal. For example searching for specific episodes from a series using regex as a filter.
 
-Contributors are welcome.
+Note that this doesn't actually download the files that the torrent contains, only the .torrent file.
+
+Supports both magnet links and regular .torrent files.
 
 # Usage
+
+## Download single torrents
+
+`mtorrentd <https://site.com/torrents/torrentname.torrent>`
+or
+`mtorrentd <magnet:?xt>`
+
+With an optional -d for download directory. 
+This can also be set in a yaml config file located in: ~/.config/mtorrentd/config.yaml
+Default value is:
+`watch_dir: ~/.mtorrentd/watch`
+
+## Search through torrent sites
 
 ### Pretend download
 
@@ -43,6 +58,7 @@ Override the download directory.
 ---
 
 ### Config files
+
 #### sites.yaml
 Under each site these are the options that can be configured:
 ```
@@ -62,5 +78,18 @@ watch_dir
 ```
 
 ### Install
+
+#### Packaged
+Get it from the AUR in Archlinux.
+
 #### Manual
 `python3 setup.py install`
+
+It's also possible to run directly from ./mtorrentd.py just make sure dependencies are installed.
+
+### Dependencies
+
+- pyyaml
+- requests
+- bs4
+- libtorrent
