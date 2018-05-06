@@ -127,11 +127,17 @@ watch_dir
 Get it from the AUR in Archlinux.
 ##### Manual
 python-setuptools required.
+
 `python3 setup.py install`
+
 setup.py does not install libtorrent which means it must be installed manually with your package manager.
+
 Arch Linux:
+
 `pacman: pacman -S libtorrent-rasterbar`
+
 Other distributions should be similar.
+
 ##### Directly from directory
 It's also possible to run directly from ./mtorrentd.py just make sure dependencies are installed.
 
