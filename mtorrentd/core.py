@@ -43,6 +43,22 @@ def load_site_module(site):
     return site_module
 
 
+def write_torrent_to_file(full_torrent_path, torrent_content, download_dir):
+    if os.path.isfile(full_torrent_path):
+        print('Download aborted. Torrent file already exists.')
+    try:
+        with open(full_torrent_path, "wb") as f:
+            f.write(torrent_content)
+            print('Torrent added here: ' + full_torrent_path)
+    except PermissionError:
+        print('[ERROR] Denied permission to save torrent here: %s'
+                % download_dir)
+        exit(77)
+    except FileNotFoundError as err:
+        print('[ERROR] Create the directory to store the torrent file in.', err)
+        exit(77)
+
+
 def download_torrent(torrent_link, download_dir, torrent_name=None, session=None) -> None:
     """Download .torrent from link."""
     if torrent_name:
@@ -58,17 +74,7 @@ def download_torrent(torrent_link, download_dir, torrent_name=None, session=None
         with requests.Session() as session:
             torrent_file = session.get(torrent_link)
 
-    if os.path.isfile(full_torrent_path):
-        print('Download aborted. Torrent file already exists.')
-    else:
-        try:
-            with open(full_torrent_path, 'wb') as f:
-                f.write(torrent_file.content)
-                print('Torrent added here: ' + full_torrent_path)
-        except PermissionError:
-            print('[ERROR] Denied permission to save torrent here: %s'
-                    % download_dir)
-            exit(77)
+    write_torrent_to_file(full_torrent_path, torrent_file.content, download_dir)
 
 
 def download_magnet2torrent(torrent_link, download_dir, torrent_name=None) -> None:
@@ -107,9 +113,8 @@ def download_magnet2torrent(torrent_link, download_dir, torrent_name=None) -> No
     torrent_info = handle.get_torrent_info()
     torrent_file = libtorrent.create_torrent(torrent_info)
 
-    print("Saving torrent file here : " + full_torrent_path + " ...")
-    with open(full_torrent_path, "wb") as f:
-        f.write(libtorrent.bencode(torrent_file.generate()))
+    write_torrent_to_file(full_torrent_path, libtorrent.bencode(torrent_file.generate()), download_dir)
+
     print("Saved! Cleaning up dir: " + tempdir)
     libtorrent_session.remove_torrent(handle)
     shutil.rmtree(tempdir)
