@@ -1,31 +1,21 @@
+"""Core functions of mtorrentd."""
 import os
 import importlib.util
 import libtorrent
 import tempfile
 import shutil
 import requests
+from urllib import parse
 
 from sys import exit
 from time import sleep
-from urllib import parse
 
 from .paths import SITE_MODULES
 
-def validate_url(url, path=False):
-    if path:
-        _value = parse.urlparse(url).path
-    else:
-        _value = parse.urlparse(url).netloc
-    try:
-        if _value:
-            return True
-        else:
-            raise ValueError('Invalid value:', _value)
-    except:
-        raise ValueError('Invalid value:', _value)
 
 
 def session_login(site, username, password, session):
+    """When login is needed for session."""
     payload = {
         'username': username,
         'password': password
@@ -37,23 +27,24 @@ def session_login(site, username, password, session):
 
 
 def load_site_module(site):
+    """Load module to use it as a function."""
     user_module = os.path.join(SITE_MODULES['user'], site + '.py')
     system_module = os.path.join(SITE_MODULES['system'], site + '.py')
     if os.path.isfile(user_module):
         spec = importlib.util.spec_from_file_location(site, user_module)
-        site_module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(site_module)
     elif os.path.isfile(system_module):
         spec = importlib.util.spec_from_file_location(site, system_module)
-        site_module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(site_module)
     else:
         print('Site module not found. Check github for documentation and create a new site module here: %s' %(SITE_MODULES['user']))
         exit(73)
+    site_module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(site_module)
+
     return site_module
 
 
 def download_torrent(torrent_link, download_dir, torrent_name=None, session=None) -> None:
+    """Download .torrent from link."""
     if torrent_name:
         full_torrent_path = os.path.join(download_dir, torrent_name + '.torrent')
     else:
@@ -81,6 +72,7 @@ def download_torrent(torrent_link, download_dir, torrent_name=None, session=None
 
 
 def download_magnet2torrent(torrent_link, download_dir, torrent_name=None) -> None:
+    """Download magnet link."""
     tempdir = tempfile.mkdtemp()
     libtorrent_session = libtorrent.session()
     params = {
@@ -116,7 +108,6 @@ def download_magnet2torrent(torrent_link, download_dir, torrent_name=None) -> No
     torrent_file = libtorrent.create_torrent(torrent_info)
 
     print("Saving torrent file here : " + full_torrent_path + " ...")
-    torrent_content = libtorrent.bencode(torrent_file.generate())
     with open(full_torrent_path, "wb") as f:
         f.write(libtorrent.bencode(torrent_file.generate()))
     print("Saved! Cleaning up dir: " + tempdir)

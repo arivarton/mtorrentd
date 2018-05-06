@@ -3,8 +3,8 @@
 # https://packaging.pypa.io/en/latest/
 # https://setuptools.readthedocs.io/en/latest/setuptools.html
 
-from distutils.core import setup
 from os import path
+from setuptools import setup, find_packages
 
 exec_dir = path.abspath(path.dirname(__file__))
 
@@ -13,7 +13,7 @@ with open(path.join(exec_dir, 'README.md'), encoding='utf-8') as f:
 
 setup(
     name='mtorrentd',
-    version='0.3.3',
+    version='0.3.4',
     description='Search for and download multiple torrents at once',
     long_description=long_description,
     long_description_content_type='text/markdown',
@@ -44,5 +44,15 @@ setup(
     ],
     keywords='torrent download regex filter',
     python_requires='>=3',
-    packages=['mtorrentd','mtorrentd.site-modules',],
+    install_requires=[
+        'pyyaml',
+        'requests',
+        'bs4',
+    ],
+    packages=find_packages(exclude=['tests', ]),
+    entry_points={
+        'console_scripts': [
+            'mtorrentd = mtorrentd.main:run',
+        ]
+    }
 )
