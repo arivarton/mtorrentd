@@ -6,6 +6,8 @@ Note that this doesn't actually download the files that the torrent contains, on
 
 Supports both magnet links and regular .torrent files.
 
+Python2 is not supported.
+
 
 # Usage
 ### Download single torrents
@@ -79,7 +81,7 @@ optional arguments:
 #### Pretend download
 The -x parameter is set so the torrents doesn't actually download, it will only print out information about the torrents that were found with the search criteria.
 ##### Examples
-`mtorrentd deildu 'Mr Robot s02' username password -x`
+`mtorrentd deildu 'Mr Robot s02' --username <username> --password <password> -x`
 `mtorrentd thepiratebay 'Mr Robot s02' -x`
 
 #### Download
@@ -90,9 +92,9 @@ The -p parameter overrides the default maximum page count of 100.
 ###### Examples
 `mtorrentd thepiratebay 'Mr Robot ' -x -p 5`
 ##### -r
-The -r parameter is for regex and will restrict the found torrents based on it.
+The -r parameter is for regex and will restrict the found torrents based on it. Regex defaults to ignore case in mtorrentd.
 ###### Examples
-`mtorrentd thepiratebay 'Mr Robot' -x -r '.*[sS]02.*'`
+`mtorrentd thepiratebay 'Mr Robot' -x -r '.*s02.*'`
 ##### -d
 Override the download directory.
 ###### Examples
@@ -108,6 +110,7 @@ username
 password
 login_path
 page_path (required)
+page_start
 search_path (required)
 append_path
 url (required)
@@ -123,7 +126,12 @@ watch_dir
 ##### Packaged
 Get it from the AUR in Archlinux.
 ##### Manual
+python-setuptools required.
 `python3 setup.py install`
+setup.py does not install libtorrent which means it must be installed manually with your package manager.
+Arch Linux:
+`pacman: pacman -S libtorrent-rasterbar`
+Other distributions should be similar.
 ##### Directly from directory
 It's also possible to run directly from ./mtorrentd.py just make sure dependencies are installed.
 
